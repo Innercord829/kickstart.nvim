@@ -199,7 +199,6 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 -- vim.keymap.set("n", "<C-S-l>", "<C-w>L", { desc = "Move window to the right" })
 -- vim.keymap.set("n", "<C-S-j>", "<C-w>J", { desc = "Move window to the lower" })
 -- vim.keymap.set("n", "<C-S-k>", "<C-w>K", { desc = "Move window to the upper" })
-
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
@@ -671,7 +670,7 @@ require('lazy').setup({
       local servers = {
         -- clangd = {},
         -- gopls = {},
-        -- pyright = {},
+        pyright = {},
         -- rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
@@ -1029,5 +1028,36 @@ require('lazy').setup({
   },
 })
 
+local non_c_line_comments_by_filetype = {
+  lua = '--',
+  python = '#',
+  sql = '--',
+}
+
+local function comment_out(opts)
+  local line_comment = non_c_line_comments_by_filetype[vim.bo.filetype] or '//'
+  local start = math.min(opts.line1, opts.line2)
+  local finish = math.max(opts.line1, opts.line2)
+
+  vim.api.nvim_command(start .. ',' .. finish .. 's:^:' .. line_comment .. ':')
+  vim.api.nvim_command 'noh'
+end
+
+local function uncomment(opts)
+  local line_comment = non_c_line_comments_by_filetype[vim.bo.filetype] or '//'
+  local start = math.min(opts.line1, opts.line2)
+  local finish = math.max(opts.line1, opts.line2)
+
+  pcall(vim.api.nvim_command, start .. ',' .. finish .. 's:^\\(\\s\\{-\\}\\)' .. line_comment .. ':\\1:')
+  vim.api.nvim_command 'noh'
+end
+
+vim.api.nvim_create_user_command('CommentOut', comment_out, { range = true })
+vim.keymap.set('v', '<C-_>', ':CommentOut<CR>')
+vim.keymap.set('n', '<C-_>', ':CommentOut<CR>')
+
+vim.api.nvim_create_user_command('Uncomment', uncomment, { range = true })
+vim.keymap.set('v', '<C-c>', ':Uncomment<CR>')
+vim.keymap.set('n', '<C-c>', ':Uncomment<CR>')
 -- The line beneath this is called `modeline`. See `:help modeline`
--- vim: ts=2 sts=2 sw=2 et
+-- vim: ts=2 sts=2 sw=2 e
